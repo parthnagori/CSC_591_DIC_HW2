@@ -24,23 +24,23 @@ class Node:
   def __init__(self,val):
     self.id = val
     self.predecessor = None
-    self.successor = self
+    # self.finger[0] = self
     self.finger = [self for i in range(m)]
 
   def join(self, n1):
     print("Inside join")
-    # self.predecessor = None
-    # self.successor = n1.find_successor(self.id);
-    # self.stabilize()
-    # n1.stabilize()
-    self.init_finger_table(n1)
+    self.predecessor = None
+    self.finger[0] = n1.find_successor(self.id);
+    self.stabilize()
+    n1.stabilize()
+    # self.init_finger_table(n1)
     # self.update_others()
     
   def init_finger_table(self, n1):
     finger_start = get_start(self.finger[0].id, 0)
     self.finger[0] = n1.find_successor(finger_start)
-    self.predecessor = self.successor.predecessor
-    self.successor.predecessor = self
+    self.predecessor = self.finger[0].predecessor
+    self.finger[0].predecessor = self
     for i in range(0,m-1):
       curr_finger_start = get_start(self.finger[i+1].id, i+1)
       if is_id_in_range(self.id, self.finger[i].id, curr_finger_start, True, False):
@@ -54,10 +54,10 @@ class Node:
 
   def stabilize(self):
     print("Inside stabilize")
-    x = self.successor.predecessor
-    if x and is_id_in_range(self.id, self.successor.id, x.id, False, False):
-      self.successor = x
-    self.successor.notify(self)
+    x = self.finger[0].predecessor
+    if x and is_id_in_range(self.id, self.finger[0].id, x.id, False, False):
+      self.finger[0] = x
+    self.finger[0].notify(self)
     # stabilize -- called periodically; node updates who it thinks its successor is.
 
   def notify(self, n1):
@@ -71,19 +71,19 @@ class Node:
     for i in range(0,m):
       self.finger[i] = self.find_successor(self.id + 2**i)
       if i == 0:
-        self.successor = self.finger[i]
+        self.finger[0] = self.finger[i]
 
   def display(self):
-    successor = self.successor.id if self.successor else None
-    predecessor = self.predecessor.id if self.predecessor else None
+    succ = self.finger[0].id if self.finger[0] else None
+    pred = self.predecessor.id if self.predecessor else None
     finger_table = ",".join(str(x.id) for x in self.finger)
-    print("Node {}: suc {}, pre {}: finger {}".format(self.id, successor, predecessor, finger_table))
+    print("< Node {}: suc {}, pre {}: finger {}".format(self.id, succ, pred, finger_table))
 
   def find_successor(self, val):
-    if not (is_id_in_range(self.id, self.successor.id, val, False, True)):
-      return self.successor
+    if not (is_id_in_range(self.id, self.finger[0].id, val, False, True)):
+      return self.finger[0]
     else:
-      n0 = successor.closest_preceding_finger(val)
+      n0 = self.finger[0].closest_preceding_finger(val)
       if n0 == self:
         return self
       return n0.find_successor(val)
@@ -163,23 +163,24 @@ def execute_file_instructions(filename, m):
   with open(filename) as f:
     for line in f:
       print(line)
-      parse_and_execute(line)
+      parse_and_execute(line,m)
 
 if __name__ == '__main__':
   m = 0
   ring_length = 0
   ring = {}
   args = sys.argv
+  print(args)
   if len(args) == 4:
-    test_file = args[1]
-    m = int(args[2])
+    test_file = args[2]
+    m = int(args[3])
     ring_length = int(2**m)
     execute_file_instructions(test_file, m)
   elif len(args) == 2:
     m = int(args[1])
     ring_length = int(2**m)
     while(True):
-      print("\nEnter command: ")
+      print("\n>")
       instruction = input()
       flag = parse_and_execute(instruction, m)
       if flag == "end":
